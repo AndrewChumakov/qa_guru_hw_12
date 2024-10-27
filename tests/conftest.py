@@ -9,15 +9,27 @@ from selenium.webdriver.chrome.options import Options
 from utils import attach
 
 
+DEFAULT_BROWSER_ADDRESS = "selenoid.autotests.cloud"
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--browser_address"
+    )
+
 @pytest.fixture(scope='session', autouse=True)
 def load_env():
     load_dotenv()
 
-@pytest.fixture(scope="function", autouse=True)
-def browser_driver():
+@pytest.fixture(scope="function")
+def browser_driver(request):
+    browser_address = request.config.getoption('--browser_address')
+    browser_address = browser_address if browser_address is not None else DEFAULT_BROWSER_ADDRESS
     selenoid_login = os.getenv("SELENOID_LOGIN")
     selenoid_pass = os.getenv("SELENOID_PASS")
     browser.config.base_url = "https://demoqa.com"
+    browser.config.window_height = 1080
+    browser.config.window_width = 1920
     options = Options()
 
     capabilities = {
@@ -32,7 +44,7 @@ def browser_driver():
     options.page_load_strategy = "eager"
     options.capabilities.update(capabilities)
     driver = webdriver.Remote(
-        command_executor=f"https://{selenoid_login}:{selenoid_pass}@selenoid.autotests.cloud/wd/hub",
+        command_executor=f"https://{selenoid_login}:{selenoid_pass}@{browser_address}/wd/hub",
         options=options
     )
 
